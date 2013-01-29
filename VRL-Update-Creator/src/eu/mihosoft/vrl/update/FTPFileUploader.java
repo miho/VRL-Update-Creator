@@ -7,6 +7,8 @@ package eu.mihosoft.vrl.update;
 import eu.mihosoft.vrl.annotation.ComponentInfo;
 import eu.mihosoft.vrl.annotation.ParamInfo;
 import eu.mihosoft.vrl.io.IOUtil;
+import eu.mihosoft.vrl.system.VMessage;
+import eu.mihosoft.vrl.visual.Message;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -23,7 +25,7 @@ public class FTPFileUploader implements java.io.Serializable {
 
     private static final long serialVersionUID = 1L;
     
-    private int bufferSize = 4096*8;
+    private int bufferSize = 4096*16;
 
     // add your code here
     public void upload(
@@ -61,7 +63,12 @@ public class FTPFileUploader implements java.io.Serializable {
                 
                 totalRead+=bytesRead;
                 
-                System.out.println(" --> uploading " + content + " " + ((float)totalRead/(float)fileSize * 100.f) + "%");
+                String percentageMSG = " --> uploading " + content + " " + ((float)totalRead/(float)fileSize * 100.f) + " %";
+                
+                System.out.println(percentageMSG);
+                
+                Message m = VMessage.info("Uploader", percentageMSG);
+                VMessage.defineMessageAsRead(m);
             }
 
             inputStream.close();
@@ -70,10 +77,12 @@ public class FTPFileUploader implements java.io.Serializable {
             boolean completed = ftpClient.completePendingCommand();
             if (completed) {
                 System.out.println(">> file is uploaded successfully.");
+                VMessage.info("Uploader", ">> file is uploaded successfully.");
             }
 
         } catch (IOException ex) {
             System.out.println("Error: " + ex.getMessage());
+            VMessage.error("Uploader", "Error: " + ex.getMessage());
             ex.printStackTrace();
         } finally {
             try {
