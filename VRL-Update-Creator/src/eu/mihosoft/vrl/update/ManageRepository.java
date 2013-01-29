@@ -97,6 +97,8 @@ public class ManageRepository implements java.io.Serializable {
 
         FTPFileUploader uploader = new FTPFileUploader();
         uploader.upload(user, pass, server, location, file);
+        
+        removeEntry(name, version);
 
         repository.addEntry(new RepositoryEntry(name, version, IOUtil.generateSHA1Sum(file), url + "/" + file.getName()));
 

@@ -24,8 +24,7 @@ import org.apache.commons.net.ftp.FTPClient;
 public class FTPFileUploader implements java.io.Serializable {
 
     private static final long serialVersionUID = 1L;
-    
-    private int bufferSize = 4096*16;
+    private int bufferSize = 4096 * 32;
 
     // add your code here
     public void upload(
@@ -52,23 +51,32 @@ public class FTPFileUploader implements java.io.Serializable {
             OutputStream outputStream = ftpClient.storeFileStream(remoteFile);
 
             long fileSize = IOUtil.getFileSize(content);
-            
+
             byte[] bytesIn = new byte[bufferSize];
             int bytesRead = 0;
-            
+
             long totalRead = 0;
+
+            long timeStamp = System.currentTimeMillis();
+            long currentTime = 0;
 
             while ((bytesRead = inputStream.read(bytesIn)) != -1) {
                 outputStream.write(bytesIn, 0, bytesRead);
+
+                totalRead += bytesRead;
+
+                long diffTime = currentTime - timeStamp;
+
+                if (diffTime < 0 || diffTime > 1000) {
+                    String percentageMSG = " --> uploading " + content + " " + ((float) totalRead / (float) fileSize * 100.f) + " %";
+
+                    System.out.println(percentageMSG);
+                    Message m = VMessage.info("Uploader", percentageMSG);
+                    VMessage.defineMessageAsRead(m);
+                    timeStamp = System.currentTimeMillis();
+                }
                 
-                totalRead+=bytesRead;
-                
-                String percentageMSG = " --> uploading " + content + " " + ((float)totalRead/(float)fileSize * 100.f) + " %";
-                
-                System.out.println(percentageMSG);
-                
-                Message m = VMessage.info("Uploader", percentageMSG);
-                VMessage.defineMessageAsRead(m);
+                currentTime = System.currentTimeMillis();
             }
 
             inputStream.close();
