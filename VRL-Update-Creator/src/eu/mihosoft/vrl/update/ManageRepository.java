@@ -6,6 +6,7 @@ package eu.mihosoft.vrl.update;
 
 import eu.mihosoft.vrl.annotation.ComponentInfo;
 import eu.mihosoft.vrl.annotation.OutputInfo;
+import eu.mihosoft.vrl.annotation.ParamGroupInfo;
 import eu.mihosoft.vrl.annotation.ParamInfo;
 import eu.mihosoft.vrl.io.IOUtil;
 import eu.mihosoft.vrl.reflection.VisualCanvas;
@@ -58,9 +59,13 @@ public class ManageRepository implements java.io.Serializable {
     }
 
     public void loadRepository(
+            @ParamGroupInfo(group = "FTP Location|true")
             @ParamInfo(name = "Server") String server,
+            @ParamGroupInfo(group = "FTP Auth|false")
             @ParamInfo(name = "User") String user,
+            @ParamGroupInfo(group = "FTP Auth")
             @ParamInfo(name = "Password") String pass,
+            @ParamGroupInfo(group = "FTP Location")
             @ParamInfo(name = "Location (e.g. vrl-studio.mihosoft/updates)") String location,
             @ParamInfo(name = "OS", style = "selection",
             options = "value=[\"linux\", \"windows\", \"osx\"]") final String osFolderName) throws IOException {
@@ -91,15 +96,28 @@ public class ManageRepository implements java.io.Serializable {
         return repository.removeEntry(new RepositoryEntry(name, version, "", ""));
     }
 
-    public boolean addEntry(@ParamInfo(name = "Name",
+    public boolean addEntry(
+            @ParamGroupInfo(group = "Software Info|true")
+            @ParamInfo(name = "Name",
             style = "plugin-name") String name,
+            @ParamGroupInfo(group = "Software Info")
             @ParamInfo(name = "Version") String version,
+            @ParamGroupInfo(group = "FTP Location|true")
             @ParamInfo(name = "Server") String server,
+            @ParamGroupInfo(group = "FTP Location")
             @ParamInfo(name = "Remote Location") String location,
+            @ParamGroupInfo(group = "HTTP Location|true")
             @ParamInfo(name = "URL") String url,
+            @ParamGroupInfo(group = "FTP Auth|false")
             @ParamInfo(name = "User") String user,
+            @ParamGroupInfo(group = "FTP Auth")
             @ParamInfo(name = "Password") String pass,
-            @ParamInfo(name = "File", style = "load-dialog") File file) {
+            @ParamGroupInfo(group = "FTP Upload|true")
+            @ParamInfo(name = "File", style = "load-dialog") File file,
+            @ParamGroupInfo(group = "PGP Auth|true")
+            @ParamInfo(name = "Private Key", style = "load-dialog") File privKeyFile) throws IOException {
+        
+        createAndUploadSignature(server, location, user, pass, privKeyFile, file);
 
         FTPFileUploader uploader = new FTPFileUploader();
         uploader.upload(user, pass, server, location, file);
@@ -113,32 +131,40 @@ public class ManageRepository implements java.io.Serializable {
     }
 
     public void createAndUploadSignature(
+            @ParamGroupInfo(group = "FTP Location|true")
             @ParamInfo(name = "Server") String server,
+            @ParamGroupInfo(group = "FTP Location")
             @ParamInfo(name = "Remote Location") String location,
+            @ParamGroupInfo(group = "FTP Auth|false")
             @ParamInfo(name = "User") String user,
+            @ParamGroupInfo(group = "FTP Auth")
             @ParamInfo(name = "Password") String pass,
+            @ParamGroupInfo(group = "PGP Auth|true")
             @ParamInfo(name = "Private Key", style = "load-dialog") File privKeyFile,
+            @ParamGroupInfo(group = "PGP Auth|true")
             @ParamInfo(name = "File", style = "load-dialog") File file) throws IOException {
-        
+
         VisualCanvas canvas = VRL.getCurrentProjectController().getCurrentCanvas();
-
         JPasswordField pwdField = new JPasswordField();
-
         VDialog.showDialogWindow(canvas, "Enter Private Key Password", pwdField, "Sign", true);
-        
+
         File signatureFile = new File(file.getAbsolutePath() + ".asc");
         // TODO use char array for password and clear it after usage
         PGPUtil.signFile(privKeyFile, new String(pwdField.getPassword()), file, signatureFile, true);
-        
+
         FTPFileUploader uploader = new FTPFileUploader();
-        uploader.upload(user, pass, server, location, file);
+        uploader.upload(user, pass, server, location, signatureFile);
     }
 
     @OutputInfo(name = "Repository File")
     public File saveRepository(
+            @ParamGroupInfo(group = "FTP Location|true")
             @ParamInfo(name = "Server") String server,
+            @ParamGroupInfo(group = "FTP Auth|false")
             @ParamInfo(name = "User") String user,
+            @ParamGroupInfo(group = "FTP Auth")
             @ParamInfo(name = "Password") String pass,
+            @ParamGroupInfo(group = "FTP Location")
             @ParamInfo(name = "Location (e.g. vrl-studio.mihosoft/updates)") String location,
             @ParamInfo(name = "OS", style = "selection",
             options = "value=[\"linux\", \"windows\", \"osx\"]") final String osFolderName) throws IOException {
@@ -165,13 +191,19 @@ public class ManageRepository implements java.io.Serializable {
     }
 
     public void saveRepositorySignature(
+            @ParamGroupInfo(group = "FTP Location|true")
             @ParamInfo(name = "Server") String server,
+            @ParamGroupInfo(group = "FTP Location")
+            @ParamInfo(name = "Remote Location (e.g. vrl-studio.mihosoft/updates)") String location,
+            @ParamGroupInfo(group = "FTP Auth|false")
             @ParamInfo(name = "User") String user,
+            @ParamGroupInfo(group = "FTP Auth")
             @ParamInfo(name = "Password") String pass,
-            @ParamInfo(name = "Location (e.g. vrl-studio.mihosoft/updates)") String location,
             @ParamInfo(name = "OS", style = "selection",
             options = "value=[\"linux\", \"windows\", \"osx\"]") final String osFolderName,
+            @ParamGroupInfo(group = "PGP Auth|true")
             @ParamInfo(name = "Private Key File", style = "load-dialog") File privKeyFile,
+            @ParamGroupInfo(group = "PGP Auth|true")
             @ParamInfo(name = "Repository File", style = "load-dialog") File f) throws IOException {
 
 
