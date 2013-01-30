@@ -103,15 +103,38 @@ public class ManageRepository implements java.io.Serializable {
 
         FTPFileUploader uploader = new FTPFileUploader();
         uploader.upload(user, pass, server, location, file);
-        
+
         removeEntry(name, version);
 
-        repository.addEntry(new RepositoryEntry(name, version, IOUtil.generateSHA1Sum(file), url + "/" + file.getName()));
+        repository.addEntry(new RepositoryEntry(name, version,
+                IOUtil.generateSHA1Sum(file), url + "/" + file.getName()));
 
         return true;
     }
 
-    @OutputInfo(name="Repository File")
+    public void createAndUploadSignature(
+            @ParamInfo(name = "Server") String server,
+            @ParamInfo(name = "Remote Location") String location,
+            @ParamInfo(name = "User") String user,
+            @ParamInfo(name = "Password") String pass,
+            @ParamInfo(name = "Private Key", style = "load-dialog") File privKeyFile,
+            @ParamInfo(name = "File", style = "load-dialog") File file) throws IOException {
+        
+        VisualCanvas canvas = VRL.getCurrentProjectController().getCurrentCanvas();
+
+        JPasswordField pwdField = new JPasswordField();
+
+        VDialog.showDialogWindow(canvas, "Enter Private Key Password", pwdField, "Sign", true);
+        
+        File signatureFile = new File(file.getAbsolutePath() + ".asc");
+        // TODO use char array for password and clear it after usage
+        PGPUtil.signFile(privKeyFile, new String(pwdField.getPassword()), file, signatureFile, true);
+        
+        FTPFileUploader uploader = new FTPFileUploader();
+        uploader.upload(user, pass, server, location, file);
+    }
+
+    @OutputInfo(name = "Repository File")
     public File saveRepository(
             @ParamInfo(name = "Server") String server,
             @ParamInfo(name = "User") String user,
@@ -122,8 +145,6 @@ public class ManageRepository implements java.io.Serializable {
 
         FTPFileUploader downloader = new FTPFileUploader();
         File repositoryFile = new File(IOUtil.createTempDir(), "repository.xml");
-
-
 
         XMLEncoder encoder = null;
 
@@ -139,10 +160,10 @@ public class ManageRepository implements java.io.Serializable {
         }
 
         downloader.upload(user, pass, server, location + "/" + osFolderName, repositoryFile);
-        
+
         return repositoryFile;
     }
-    
+
     public void saveRepositorySignature(
             @ParamInfo(name = "Server") String server,
             @ParamInfo(name = "User") String user,
@@ -150,22 +171,22 @@ public class ManageRepository implements java.io.Serializable {
             @ParamInfo(name = "Location (e.g. vrl-studio.mihosoft/updates)") String location,
             @ParamInfo(name = "OS", style = "selection",
             options = "value=[\"linux\", \"windows\", \"osx\"]") final String osFolderName,
-            @ParamInfo(name = "Private Key File", style="load-dialog") File privKeyFile,
-            @ParamInfo(name = "Repository File", style="load-dialog") File f) throws IOException {
-        
-        
+            @ParamInfo(name = "Private Key File", style = "load-dialog") File privKeyFile,
+            @ParamInfo(name = "Repository File", style = "load-dialog") File f) throws IOException {
+
+
         VisualCanvas canvas = VRL.getCurrentProjectController().getCurrentCanvas();
-        
+
         JPasswordField pwdField = new JPasswordField();
-        
+
         VDialog.showDialogWindow(canvas, "Enter Private Key Password", pwdField, "Sign", true);
 
-        FTPFileUploader downloader = new FTPFileUploader();
-        File repositoryFile = new File(f.getAbsolutePath()+".asc");
+        FTPFileUploader uploader = new FTPFileUploader();
+        File signatureFile = new File(f.getAbsolutePath() + ".asc");
         // TODO use char array for password and clear it after usage
-        PGPUtil.signFile(privKeyFile, new String(pwdField.getPassword()), f, repositoryFile, true);
+        PGPUtil.signFile(privKeyFile, new String(pwdField.getPassword()), f, signatureFile, true);
 
-        downloader.upload(user, pass, server, location + "/" + osFolderName, repositoryFile);
+        uploader.upload(user, pass, server, location + "/" + osFolderName, signatureFile);
     }
 
     /**
