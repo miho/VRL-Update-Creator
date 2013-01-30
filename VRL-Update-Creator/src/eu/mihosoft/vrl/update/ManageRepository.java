@@ -5,11 +5,16 @@
 package eu.mihosoft.vrl.update;
 
 import eu.mihosoft.vrl.annotation.ComponentInfo;
+import eu.mihosoft.vrl.annotation.OutputInfo;
 import eu.mihosoft.vrl.annotation.ParamInfo;
 import eu.mihosoft.vrl.io.IOUtil;
+import eu.mihosoft.vrl.reflection.VisualCanvas;
+import eu.mihosoft.vrl.security.PGPUtil;
 import eu.mihosoft.vrl.system.Repository;
 import eu.mihosoft.vrl.system.RepositoryEntry;
 import eu.mihosoft.vrl.system.VMessage;
+import eu.mihosoft.vrl.system.VRL;
+import eu.mihosoft.vrl.visual.VDialog;
 import java.beans.XMLDecoder;
 import java.beans.XMLEncoder;
 import java.io.BufferedInputStream;
@@ -18,6 +23,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import javax.swing.JPasswordField;
 
 /**
  *
@@ -105,7 +111,8 @@ public class ManageRepository implements java.io.Serializable {
         return true;
     }
 
-    public void saveRepository(
+    @OutputInfo(name="Repository File")
+    public File saveRepository(
             @ParamInfo(name = "Server") String server,
             @ParamInfo(name = "User") String user,
             @ParamInfo(name = "Password") String pass,
@@ -130,6 +137,34 @@ public class ManageRepository implements java.io.Serializable {
                 encoder.close();
             }
         }
+
+        downloader.upload(user, pass, server, location + "/" + osFolderName, repositoryFile);
+        
+        return repositoryFile;
+    }
+    
+    public void saveRepositorySignature(
+            @ParamInfo(name = "Server") String server,
+            @ParamInfo(name = "User") String user,
+            @ParamInfo(name = "Password") String pass,
+            @ParamInfo(name = "Location (e.g. vrl-studio.mihosoft/updates)") String location,
+            @ParamInfo(name = "OS", style = "selection",
+            options = "value=[\"linux\", \"windows\", \"osx\"]") final String osFolderName,
+            @ParamInfo(name = "Private Key File", style="load-dialog") File privKeyFile,
+            @ParamInfo(name = "Repository File", style="load-dialog") File f) throws IOException {
+        
+        
+        
+        VisualCanvas canvas = VRL.getCurrentProjectController().getCurrentCanvas();
+        
+        JPasswordField pwdField = new JPasswordField();
+        
+        VDialog.showDialogWindow(canvas, "Enter Private Key Password", pwdField, "Sign", true);
+
+        FTPFileUploader downloader = new FTPFileUploader();
+        File repositoryFile = new File(f.getAbsolutePath()+".asc");
+        // TODO use char array for password and clear it after usage
+        PGPUtil.signFile(privKeyFile, new String(pwdField.getPassword()), f, repositoryFile, true);
 
         downloader.upload(user, pass, server, location + "/" + osFolderName, repositoryFile);
     }
