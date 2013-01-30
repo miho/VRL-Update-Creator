@@ -154,7 +154,6 @@ public class ManageRepository implements java.io.Serializable {
             @ParamInfo(name = "Repository File", style="load-dialog") File f) throws IOException {
         
         
-        
         VisualCanvas canvas = VRL.getCurrentProjectController().getCurrentCanvas();
         
         JPasswordField pwdField = new JPasswordField();
